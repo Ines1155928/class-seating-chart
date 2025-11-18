@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>班級座位表產生器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f8;
+      color: #222;
+    }
+    header {
+      padding: 16px 24px;
+      background: #3949ab;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    header .subtitle {
+      font-size: 13px;
+      opacity: 0.85;
+    }
+    main {
+      padding: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .panel {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    #left-panel {
+      flex: 1 1 320px;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #right-panel {
+      flex: 2 1 420px;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .section {
+      margin-bottom: 10px;
+    }
+    label {
+      font-size: 13px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    input[type="file"] {
+      font-size: 13px;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #3949ab;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s ease, transform 0.05s ease;
+    }
+    button.secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    button.danger {
+      background: #e53935;
+    }
+    button:hover {
+      background: #303f9f;
+    }
+    button.secondary:hover {
+      background: #d5d5d5;
+    }
+    button.danger:hover {
+      background: #c62828;
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .hint {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #e8eaf6;
+      color: #3949ab;
+    }
+    #student-count {
+      font-size: 12px;
+      color: #555;
+    }
+    .student-pool {
+      min-height: 80px;
+      border-radius: 8px;
+      border: 1px dashed #bbb;
+      padding: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: #fafafa;
+    }
+    .student-item {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid #c5cae9;
+      font-size: 12px;
+      cursor: grab;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .student-item:active {
+      cursor: grabbing;
+    }
+    .student-item span.remove {
+      margin-left: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      color: #b71c1c;
+    }
+
+    .config-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: flex-end;
+    }
+    .config-row > div {
+      flex: 1 1 120px;
+    }
+    .mode-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    #seat-grid-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #view-info {
+      font-size: 12px;
+      color: #555;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #seat-grid {
+      background: #fdfdfd;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      display: grid;
+      gap: 8px;
+      justify-content: center;
+    }
+    .seat {
+      width: 80px;
+      min-height: 48px;
+      border-radius: 10px;
+      border: 1px solid #c5cae9;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4px;
+      font-size: 12px;
+      text-align: center;
+      position: relative;
+    }
+    .seat.empty {
+      background: #fafafa;
+      border-style: dashed;
+      color: #aaa;
+    }
+    .seat-label {
+      position: absolute;
+      top: 3px;
+      left: 4px;
+      font-size: 10px;
+      color: #999;
+    }
+    .seat-name {
+      padding: 0 4px;
+      word-break: break-all;
+    }
+    .seat-remove {
+      position: absolute;
+      top: 3px;
+      right: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      color: #b71c1c;
+    }
+    .seat.drag-over {
+      border-color: #3949ab;
+      box-shadow: 0 0 0 2px rgba(57,73,171,0.2);
+    }
+
+    .legend {
+      font-size: 11px;
+      color: #666;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .legend span.box {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: #fff;
+      border: 1px solid #c5cae9;
+      margin-right: 3px;
+    }
+    .legend span.box.empty {
+      background: #fafafa;
+      border-style: dashed;
+    }
+
+    @media (max-width: 900px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      #left-panel {
+        max-width: none;
+      }
+      .seat {
+        width: 72px;
+      }
+    }
+  </style>
+  <!-- 讀取 Excel 專用：SheetJS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>班級座位表互動工具</h1>
+      <div class="subtitle">手動輸入／Excel 名單匯入、隨機排座、手動拖曳、方向切換一次搞定</div>
+    </div>
+    <div id="student-count">目前學生：<span id="student-count-number">0</span> 人</div>
+  </header>
+
+  <main>
+    <section id="left-panel" class="panel">
+      <div class="section">
+        <h2>1. 建立學生名單 <span class="tag">必填</span></h2>
+        <h3>手動輸入</h3>
+        <label for="manual-names">每行一個學生姓名（可貼上座號＋姓名，系統會直接使用整行文字）</label>
+        <textarea id="manual-names" placeholder="01 王小明&#10;02 謝小城&#10;03 陳怡安&#10;04 林佳穎&#10;05 張宇晨&#10;06 劉子翔&#10;07 黃品睿&#10;08 吳宥蓁&#10;09 許庭瑋&#10;10 蔡孟樺&#10;11 楊承翰&#10;12 洪浚喆&#10;13 鄭雅玲&#10;14 郭柏任&#10;15 邱品妤&#10;16 莊予恩&#10;17 曾彥廷&#10;18 蕭筱晴&#10;19 邵建豪&#10;20 廖心逸&#10;21 葉冠廷&#10;22 顏筠庭&#10;23 方昀潔&#10;24 鍾子瑜&#10;25 蘇婕妤&#10;26 彭宥丞&#10;27 高靖恩&#10;28 包恬妮"></textarea>
+        <div class="btn-row">
+          <button id="add-manual-btn">加入名單</button>
+          <button id="clear-students-btn" class="secondary">清空所有學生</button>
+        </div>
+        <div class="hint">提示：重複加入時會自動忽略完全相同的名稱。</div>
+      </div>
+
+      <div class="section">
+        <h3>從 Excel 匯入</h3>
+        <label for="excel-file">選擇 .xlsx 檔案（第一個工作表、第一欄視為姓名）</label>
+        <input type="file" id="excel-file" accept=".xlsx,.xls" />
+        <div class="btn-row">
+          <button id="import-excel-btn" class="secondary">讀取 Excel 並加入名單</button>
+        </div>
+        <div class="hint">請將學生姓名放在第一欄，空白列會自動略過。</div>
+      </div>
+
+      <div class="section">
+        <h3>未安排座位的學生</h3>
+        <div id="student-pool" class="student-pool" aria-label="未安排座位學生，拖曳到座位即可">尚未建立名單</div>
+        <div class="hint">拖曳學生到座位上即可手動指定座位；刪除圖示可把座位上的學生放回這裡。</div>
+      </div>
+    </section>
+
+    <section id="right-panel" class="panel">
+      <div class="section">
+        <h2>2. 座位設定 & 排座方式</h2>
+        <div class="config-row">
+          <div>
+            <label for="seat-pattern">座位格局</label>
+            <select id="seat-pattern">
+              <option value="5x6">5 列 × 6 行（前後 5 排）</option>
+              <option value="6x5">6 列 × 5 行（前後 6 排）</option>
+            </select>
+            <div class="hint">列 = 從講台到後面一排排；行 = 教師視角的左右。</div>
+          </div>
+          <div>
+            <label for="view-direction">顯示方向</label>
+            <select id="view-direction">
+              <option value="teacher">從講台看下去</option>
+              <option value="student">從學生座位看向黑板</option>
+            </select>
+            <div class="hint">只改變顯示順序，不改變實際座號。</div>
+          </div>
+        </div>
+
+        <div class="mode-row">
+          <div style="flex:1 1 160px;">
+            <label for="assign-mode">排座模式</label>
+            <select id="assign-mode">
+              <option value="by-list">依名單順序（座號順）</option>
+              <option value="random">完全隨機</option>
+              <option value="reverse">顛倒目前座位（前後對調）</option>
+              <option value="mirror">左右對調（鏡像）</option>
+              <option value="rotate">往前輪一排</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button id="apply-layout-btn">套用排座</button>
+            <button id="clear-layout-btn" class="secondary">全部座位清空</button>
+          </div>
+        </div>
+        <div class="hint">前兩種模式會重新安排所有學生；後三種模式是對目前座位做變換。</div>
+      </div>
+
+      <div id="seat-grid-wrapper">
+        <div id="view-info">
+          <div>
+            <strong>3. 座位表</strong>
+            <span id="view-label" style="margin-left:6px;font-size:12px;color:#666;">尚未建立座位格局</span>
+          </div>
+          <div class="legend">
+            <span><span class="box"></span> 有學生</span>
+            <span><span class="box empty"></span> 空位</span>
+          </div>
+        </div>
+        <div id="seat-grid"></div>
+        <div class="hint">小提醒：點一下座位中的「×」可把該生移回未安排區。</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // 狀態資料
+    let students = []; // { id: string, name: string }
+    let layout = {
+      rows: 5,
+      cols: 6,
+      seats: [] // 存 studentId 或 null
+    };
+
+    const studentPoolEl = document.getElementById('student-pool');
+    const studentCountNumberEl = document.getElementById('student-count-number');
+    const seatPatternEl = document.getElementById('seat-pattern');
+    const viewDirectionEl = document.getElementById('view-direction');
+    const assignModeEl = document.getElementById('assign-mode');
+    const seatGridEl = document.getElementById('seat-grid');
+    const viewLabelEl = document.getElementById('view-label');
+
+    const manualNamesEl = document.getElementById('manual-names');
+    const addManualBtn = document.getElementById('add-manual-btn');
+    const clearStudentsBtn = document.getElementById('clear-students-btn');
+    const excelFileInput = document.getElementById('excel-file');
+    const importExcelBtn = document.getElementById('import-excel-btn');
+
+    const applyLayoutBtn = document.getElementById('apply-layout-btn');
+    const clearLayoutBtn = document.getElementById('clear-layout-btn');
+
+    function updateStudentCount() {
+      studentCountNumberEl.textContent = students.length;
+    }
+
+    function getStudentById(id) {
+      return students.find(s => s.id === id) || null;
+    }
+
+    function studentIsSeated(id) {
+      return layout.seats.includes(id);
+    }
+
+    function refreshStudentPool() {
+      studentPoolEl.innerHTML = '';
+      if (students.length === 0) {
+        studentPoolEl.textContent = '尚未建立名單';
+        return;
+      }
+      const unseated = students.filter(s => !studentIsSeated(s.id));
+      if (unseated.length === 0) {
+        studentPoolEl.textContent = '目前所有學生皆已安排座位';
+        return;
+      }
+      unseated.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'student-item';
+        div.draggable = true;
+        div.dataset.id = s.id;
+        div.textContent = s.name;
+
+        const removeSpan = document.createElement('span');
+        removeSpan.className = 'remove';
+        removeSpan.textContent = '×';
+        removeSpan.title = '從名單移除';
+        removeSpan.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeStudentCompletely(s.id);
+        });
+        div.appendChild(removeSpan);
+
+        div.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', s.id);
+        });
+        studentPoolEl.appendChild(div);
+      });
+    }
+
+    function removeStudentCompletely(id) {
+      layout.seats = layout.seats.map(seatId => seatId === id ? null : seatId);
+      students = students.filter(s => s.id !== id);
+      updateStudentCount();
+      refreshStudentPool();
+      renderSeatGrid();
+    }
+
+    function ensureLayoutSize(rows, cols) {
+      const total = rows * cols;
+      const oldSeats = layout.seats || [];
+      const newSeats = new Array(total).fill(null);
+      for (let i = 0; i < Math.min(total, oldSeats.length); i++) {
+        newSeats[i] = oldSeats[i];
+      }
+      layout.rows = rows;
+      layout.cols = cols;
+      layout.seats = newSeats;
+    }
+
+    function parsePattern(pattern) {
+      const [r, c] = pattern.split('x').map(v => parseInt(v, 10));
+      return { rows: r || 5, cols: c || 6 };
+    }
+
+    function renderSeatGrid() {
+      const rows = layout.rows;
+      const cols = layout.cols;
+      seatGridEl.innerHTML = '';
+      seatGridEl.style.gridTemplateColumns = `repeat(${cols}, auto)`;
+
+      const direction = viewDirectionEl.value;
+      let labelText = direction === 'teacher' ? '從講台看 → 上方為前排' : '從學生座位看 → 上方為後排';
+      viewLabelEl.textContent = `${labelText}（${rows} 列 × ${cols} 行）`;
+
+      const seatsFragment = document.createDocumentFragment();
+      for (let vr = 0; vr < rows; vr++) {
+        for (let vc = 0; vc < cols; vc++) {
+          let rowIndex, colIndex;
+          if (direction === 'teacher') {
+            rowIndex = vr;
+            colIndex = vc;
+          } else {
+            rowIndex = rows - 1 - vr;
+            colIndex = cols - 1 - vc;
+          }
+          const seatIndex = rowIndex * cols + colIndex;
+          const studentId = layout.seats[seatIndex] || null;
+          const seatEl = document.createElement('div');
+          seatEl.className = 'seat' + (studentId ? '' : ' empty');
+          seatEl.dataset.index = seatIndex.toString();
+          seatEl.setAttribute('droppable', 'true');
+
+          const label = document.createElement('div');
+          label.className = 'seat-label';
+          label.textContent = `${rowIndex + 1}-${colIndex + 1}`;
+          seatEl.appendChild(label);
+
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'seat-name';
+          if (studentId) {
+            const stu = getStudentById(studentId);
+            nameDiv.textContent = stu ? stu.name : '(未知)';
+            const remove = document.createElement('span');
+            remove.className = 'seat-remove';
+            remove.textContent = '×';
+            remove.title = '移回未安排區';
+            remove.addEventListener('click', (e) => {
+              e.stopPropagation();
+              layout.seats[seatIndex] = null;
+              refreshStudentPool();
+              renderSeatGrid();
+            });
+            seatEl.appendChild(remove);
+          } else {
+            nameDiv.textContent = '空位';
+          }
+          seatEl.appendChild(nameDiv);
+
+          seatEl.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            seatEl.classList.add('drag-over');
+          });
+          seatEl.addEventListener('dragleave', () => {
+            seatEl.classList.remove('drag-over');
+          });
+          seatEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            seatEl.classList.remove('drag-over');
+            const id = e.dataTransfer.getData('text/plain');
+            if (!id) return;
+            placeStudentToSeat(id, seatIndex);
+          });
+
+          seatsFragment.appendChild(seatEl);
+        }
+      }
+      seatGridEl.appendChild(seatsFragment);
+    }
+
+    function placeStudentToSeat(studentId, seatIndex) {
+      layout.seats = layout.seats.map(id => id === studentId ? null : id);
+      layout.seats[seatIndex] = studentId;
+      refreshStudentPool();
+      renderSeatGrid();
+    }
+
+    function clearAllSeats() {
+      layout.seats = new Array(layout.rows * layout.cols).fill(null);
+      refreshStudentPool();
+      renderSeatGrid();
+    }
+
+    // 🔁 這裡是「重新寫過」的排座模式（含完全隨機）
+    function applyAssignMode() {
+      const mode = assignModeEl.value;
+      const rows = layout.rows;
+      const cols = layout.cols;
+      const totalSeats = rows * cols;
+
+      // 確保 seats 長度正確
+      if (!Array.isArray(layout.seats) || layout.seats.length !== totalSeats) {
+        layout.seats = new Array(totalSeats).fill(null);
+      }
+
+      if (mode === 'by-list' || mode === 'random') {
+        if (!Array.isArray(students) || students.length === 0) {
+          // 沒名單就直接不做事（不再 alert，避免被 iframe 卡住）
+          return;
+        }
+
+        // 先依名單順序拿出全部學生 id
+        const ids = students.map(s => s.id);
+
+        // 完全隨機：打亂陣列
+        if (mode === 'random') {
+          ids.sort(() => Math.random() - 0.5);
+        }
+
+        // 重新填入座位
+        layout.seats.fill(null);
+        for (let i = 0; i < Math.min(ids.length, totalSeats); i++) {
+          layout.seats[i] = ids[i];
+        }
+      } else if (mode === 'reverse') {
+        // 前後排對調：以 row 為單位反轉
+        const newSeats = new Array(totalSeats).fill(null);
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const fromIndex = r * cols + c;
+            const toRow = rows - 1 - r;
+            const toIndex = toRow * cols + c;
+            newSeats[toIndex] = layout.seats[fromIndex];
+          }
+        }
+        layout.seats = newSeats;
+      } else if (mode === 'mirror') {
+        // 左右鏡像
+        const newSeats = new Array(totalSeats).fill(null);
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const fromIndex = r * cols + c;
+            const toCol = cols - 1 - c;
+            const toIndex = r * cols + toCol;
+            newSeats[toIndex] = layout.seats[fromIndex];
+          }
+        }
+        layout.seats = newSeats;
+      } else if (mode === 'rotate') {
+        // 往前輪一排：整體向前位移一整 row（cols 個座位）
+        const shift = cols;
+        const newSeats = new Array(totalSeats).fill(null);
+        for (let i = 0; i < totalSeats; i++) {
+          const toIndex = (i - shift + totalSeats) % totalSeats;
+          newSeats[toIndex] = layout.seats[i];
+        }
+        layout.seats = newSeats;
+      }
+
+      refreshStudentPool();
+      renderSeatGrid();
+    }
+
+    function addStudentsFromLines(lines) {
+      const trimmed = lines
+        .map(l => l.replace(/\r/g, '').trim())
+        .filter(l => l.length > 0);
+      if (trimmed.length === 0) return 0;
+
+      let added = 0;
+      trimmed.forEach(name => {
+        const exists = students.some(s => s.name === name);
+        if (!exists) {
+          const id = 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+          students.push({ id, name });
+          added++;
+        }
+      });
+      if (added > 0) {
+        updateStudentCount();
+        refreshStudentPool();
+      }
+      return added;
+    }
+
+    // 事件掛載
+    addManualBtn.addEventListener('click', () => {
+      const text = manualNamesEl.value || '';
+      const lines = text.split(/\n/);
+      const added = addStudentsFromLines(lines);
+      if (added === 0) {
+        alert('沒有新增任何學生（可能是空白或全部已存在）。');
+      }
+    });
+
+    clearStudentsBtn.addEventListener('click', () => {
+      if (!confirm('確定要清空所有學生與座位安排嗎？')) return;
+      students = [];
+      layout.seats = new Array(layout.rows * layout.cols).fill(null);
+      updateStudentCount();
+      refreshStudentPool();
+      renderSeatGrid();
+    });
+
+    importExcelBtn.addEventListener('click', () => {
+      const file = excelFileInput.files && excelFileInput.files[0];
+      if (!file) {
+        alert('請先選擇一個 Excel 檔案。');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[firstSheetName];
+          const sheetJson = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          const lines = [];
+          sheetJson.forEach(row => {
+            if (row && row[0] != null) {
+              const cell = String(row[0]).trim();
+              if (cell.length > 0) {
+                lines.push(cell);
+              }
+            }
+          });
+          const added = addStudentsFromLines(lines);
+          if (added === 0) {
+            alert('Excel 中沒有可新增的姓名（可能是空白或都已存在）。');
+          } else {
+            alert(`已從 Excel 新增 ${added} 位學生。`);
+          }
+        } catch (err) {
+          console.error(err);
+          alert('讀取 Excel 時發生錯誤，請確認檔案格式是否正確。');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    seatPatternEl.addEventListener('change', () => {
+      const { rows, cols } = parsePattern(seatPatternEl.value);
+      ensureLayoutSize(rows, cols);
+      renderSeatGrid();
+    });
+
+    viewDirectionEl.addEventListener('change', () => {
+      renderSeatGrid();
+    });
+
+    applyLayoutBtn.addEventListener('click', () => {
+      applyAssignMode();
+    });
+
+    clearLayoutBtn.addEventListener('click', () => {
+      if (!confirm('確定要清空所有座位安排嗎？')) return;
+      clearAllSeats();
+    });
+
+    // 初始化
+    (function init() {
+      const { rows, cols } = parsePattern(seatPatternEl.value);
+      ensureLayoutSize(rows, cols);
+
+      // 預設示範學生名單
+      const demoLines = [
+        '01 王小明',
+        '02 謝小城',
+        '03 陳怡安',
+        '04 林佳穎',
+        '05 張宇晨',
+        '06 劉子翔',
+        '07 黃品睿',
+        '08 吳宥蓁',
+        '09 許庭瑋',
+        '10 蔡孟樺',
+        '11 楊承翰',
+        '12 洪浚喆',
+        '13 鄭雅玲',
+        '14 郭柏任',
+        '15 邱品妤',
+        '16 莊予恩',
+        '17 曾彥廷',
+        '18 蕭筱晴',
+        '19 邵建豪',
+        '20 廖心逸',
+        '21 葉冠廷',
+        '22 顏筠庭',
+        '23 方昀潔',
+        '24 鍾子瑜',
+        '25 蘇婕妤',
+        '26 彭宥丞',
+        '27 高靖恩',
+        '28 包恬妮'
+      ];
+      addStudentsFromLines(demoLines);
+
+      updateStudentCount();
+      refreshStudentPool();
+      renderSeatGrid();
+    })();
+  </script>
+</body>
+</html>
